@@ -44,7 +44,8 @@ function renderMonsters() {
             square.classList.add("selected");
         }
 
-        const pendingMove = gameState.pendingMoves[monster.player];
+        const pendingMove =
+            gameState.pendingMoves[monster.player];
 
         if (
             pendingMove &&
@@ -58,12 +59,17 @@ function renderMonsters() {
 }
 
 function handleClick(row, col) {
+    if (connectedPlayerCount < 2) {
+        alert("Wait until both players are connected.");
+        return;
+    }
+
     const clickedMonster = findMonsterAt(row, col);
 
     if (clickedMonster) {
         selectMonster(clickedMonster);
     } else {
-        queueSelectedMove(row, col);
+        submitSelectedMove(row, col);
     }
 
     renderMonsters();
@@ -78,15 +84,13 @@ function findMonsterAt(row, col) {
 }
 
 function selectMonster(monster) {
-    if (monster.player !== gameState.currentPlayer) {
-        alert(`It is Player ${gameState.currentPlayer}'s turn.`);
+    if (monster.player !== myPlayerNumber) {
+        alert("You can only select your own monsters.");
         return;
     }
 
-    if (gameState.pendingMoves[monster.player]) {
-        alert(
-            `Player ${monster.player} has already submitted a move this round.`
-        );
+    if (gameState.pendingMoves[myPlayerNumber]) {
+        alert("You already submitted a move this round.");
         return;
     }
 
@@ -130,15 +134,11 @@ function isValidMove(monster, targetRow, targetCol) {
     );
 }
 
-function queueSelectedMove(targetRow, targetCol) {
-    const selectedMonster = gameState.selectedMonster;
+function submitSelectedMove(targetRow, targetCol) {
+    const selectedMonster =
+        gameState.selectedMonster;
 
     if (!selectedMonster) return;
-
-    if (selectedMonster.player !== gameState.currentPlayer) {
-        alert(`It is Player ${gameState.currentPlayer}'s turn.`);
-        return;
-    }
 
     if (
         !isValidMove(
@@ -147,168 +147,17 @@ function queueSelectedMove(targetRow, targetCol) {
             targetCol
         )
     ) {
-        alert("Invalid move");
+        alert("Invalid move.");
         return;
     }
 
-    gameState.pendingMoves[selectedMonster.player] = {
+    socket.emit("submit-move", {
         monsterId: selectedMonster.id,
         targetRow,
         targetCol
-    };
-
-    console.log(
-        `Player ${selectedMonster.player} submitted a move`
-    );
+    });
 
     gameState.selectedMonster = null;
-
-    if (gameState.currentPlayer === 1) {
-        gameState.currentPlayer = 2;
-    }
-
-    checkPendingMoves();
-}
-
-function checkPendingMoves() {
-    const allPlayersReady = gameState.players.every(
-        playerId =>
-            gameState.pendingMoves[playerId] !== null
-    );
-
-    if (allPlayersReady) {
-        resolveTurn();
-    }
-}
-
-function resolveTurn() {
-    const moves = Object.values(
-        gameState.pendingMoves
-    );
-
-    moves.forEach(move => {
-        const monster = gameState.monsters.find(
-            currentMonster =>
-                currentMonster.id === move.monsterId
-        );
-
-        if (!monster) return;
-
-        monster.row = move.targetRow;
-        monster.col = move.targetCol;
-    });
-
-    resolveBattles();
-
-    gameState.pendingMoves[1] = null;
-    gameState.pendingMoves[2] = null;
-
-    gameState.round++;
-    gameState.currentPlayer = 1;
-
-    checkWinner();
-
-    console.log(
-        `Round ${gameState.round - 1} completed`
-    );
-
-    renderMonsters();
-}
-
-function resolveBattles() {
-    const positions = {};
-
-    gameState.monsters.forEach(monster => {
-        const key =
-            `${monster.row},${monster.col}`;
-
-        if (!positions[key]) {
-            positions[key] = [];
-        }
-
-        positions[key].push(monster);
-    });
-
-    Object.values(positions).forEach(
-        monstersOnSquare => {
-            if (monstersOnSquare.length === 2) {
-                resolveBattle(
-                    monstersOnSquare[0],
-                    monstersOnSquare[1]
-                );
-            }
-        }
-    );
-}
-
-function resolveBattle(monsterA, monsterB) {
-    if (monsterA.type === monsterB.type) {
-        removeMonster(monsterA.id);
-        removeMonster(monsterB.id);
-        return;
-    }
-
-    if (beats(monsterA.type, monsterB.type)) {
-        removeMonster(monsterB.id);
-    } else {
-        removeMonster(monsterA.id);
-    }
-}
-
-function beats(typeA, typeB) {
-    return (
-        (
-            typeA === "vampire" &&
-            typeB === "werewolf"
-        ) ||
-        (
-            typeA === "werewolf" &&
-            typeB === "ghost"
-        ) ||
-        (
-            typeA === "ghost" &&
-            typeB === "vampire"
-        )
-    );
-}
-
-function removeMonster(monsterId) {
-    gameState.monsters =
-        gameState.monsters.filter(
-            monster => monster.id !== monsterId
-        );
-}
-
-function checkWinner() {
-    const playerOneMonsters =
-        gameState.monsters.filter(
-            monster => monster.player === 1
-        );
-
-    const playerTwoMonsters =
-        gameState.monsters.filter(
-            monster => monster.player === 2
-        );
-
-    if (
-        playerOneMonsters.length === 0 &&
-        playerTwoMonsters.length === 0
-    ) {
-        alert("The game is a draw!");
-        location.reload();
-        return;
-    }
-
-    if (playerOneMonsters.length === 0) {
-        alert("Player 2 wins!");
-        location.reload();
-        return;
-    }
-
-    if (playerTwoMonsters.length === 0) {
-        alert("Player 1 wins!");
-        location.reload();
-    }
 }
 
 function updateStatusPanel() {
@@ -319,32 +168,16 @@ function updateStatusPanel() {
         document.querySelector("#current-player");
 
     const playerOneStatus =
-        document.querySelector(
-            "#player-one-status"
-        );
+        document.querySelector("#player-one-status");
 
     const playerTwoStatus =
-        document.querySelector(
-            "#player-two-status"
-        );
+        document.querySelector("#player-two-status");
 
     const playerOneScore =
-        document.querySelector(
-            "#player-one-score"
-        );
+        document.querySelector("#player-one-score");
 
     const playerTwoScore =
-        document.querySelector(
-            "#player-two-score"
-        );
-
-    if (
-        !roundNumber ||
-        !playerOneStatus ||
-        !playerTwoStatus
-    ) {
-        return;
-    }
+        document.querySelector("#player-two-score");
 
     const playerOneMonsters =
         gameState.monsters.filter(
@@ -356,23 +189,28 @@ function updateStatusPanel() {
             monster => monster.player === 2
         ).length;
 
-    roundNumber.textContent =
-        gameState.round;
+    if (roundNumber) {
+        roundNumber.textContent = gameState.round;
+    }
 
     if (currentPlayer) {
         currentPlayer.textContent =
-            `Player ${gameState.currentPlayer}`;
+            "Simultaneous turns";
     }
 
-    playerOneStatus.textContent =
-        gameState.pendingMoves[1]
-            ? "Ready"
-            : "Waiting";
+    if (playerOneStatus) {
+        playerOneStatus.textContent =
+            gameState.pendingMoves[1]
+                ? "Ready"
+                : "Choosing";
+    }
 
-    playerTwoStatus.textContent =
-        gameState.pendingMoves[2]
-            ? "Ready"
-            : "Waiting";
+    if (playerTwoStatus) {
+        playerTwoStatus.textContent =
+            gameState.pendingMoves[2]
+                ? "Ready"
+                : "Choosing";
+    }
 
     if (playerOneScore) {
         playerOneScore.textContent =
@@ -384,3 +222,4 @@ function updateStatusPanel() {
             playerTwoMonsters;
     }
 }
+

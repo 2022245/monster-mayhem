@@ -18,6 +18,16 @@
 
     <section id="game-status">
         <p>
+            <strong id="player-identity">
+                Connecting...
+            </strong>
+        </p>
+
+        <p id="connection-status">
+            Waiting for server...
+        </p>
+
+        <p>
             Round:
             <strong id="round-number">1</strong>
         </p>
@@ -70,6 +80,7 @@
 
     <div id="game-board"></div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script src="/modules/game.js"></script>
     <script src="/modules/board.js"></script>
     <script src="/modules/monsters.js"></script>
