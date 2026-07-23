@@ -10,5 +10,20 @@ const gameState = {
 
     monsters: [],
 
+    stats: {
+        battles: 0,
+        playerOneEliminations: 0,
+        playerTwoEliminations: 0
+    },
+
+    gameOver: false,
+    winner: null,
+
+    rematchReady: {
+        1: false,
+        2: false
+    },
+
     selectedMonster: null
 };
+

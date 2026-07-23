@@ -4,15 +4,18 @@ let myPlayerNumber = null;
 let connectedPlayerCount = 0;
 
 socket.on("connect", () => {
-    console.log(`Connected to server: ${socket.id}`);
+    console.log(
+        `Connected to server: ${socket.id}`
+    );
 });
 
 socket.on("player-assigned", data => {
     myPlayerNumber = data.playerNumber;
 
-    const identityElement = document.querySelector(
-        "#player-identity"
-    );
+    const identityElement =
+        document.querySelector(
+            "#player-identity"
+        );
 
     if (identityElement) {
         identityElement.textContent =
@@ -23,9 +26,10 @@ socket.on("player-assigned", data => {
 socket.on("players-connected", data => {
     connectedPlayerCount = data.count;
 
-    const connectionElement = document.querySelector(
-        "#connection-status"
-    );
+    const connectionElement =
+        document.querySelector(
+            "#connection-status"
+        );
 
     if (!connectionElement) return;
 
@@ -39,12 +43,35 @@ socket.on("players-connected", data => {
 });
 
 socket.on("game-state", serverState => {
-    gameState.round = serverState.round;
+    gameState.round =
+        serverState.round;
 
-    gameState.pendingMoves = serverState.pendingMoves;
+    gameState.pendingMoves =
+        serverState.pendingMoves;
 
-    gameState.monsters = serverState.monsters;
+    gameState.monsters =
+        serverState.monsters;
 
+    gameState.stats =
+        serverState.stats;
+
+    gameState.gameOver =
+        serverState.gameOver;
+
+    gameState.winner =
+        serverState.winner;
+
+    gameState.rematchReady =
+        serverState.rematchReady;
+
+    gameState.selectedMonster = null;
+
+    renderMonsters();
+});
+
+socket.on("game-over", data => {
+    gameState.gameOver = true;
+    gameState.winner = data.winner;
     gameState.selectedMonster = null;
 
     renderMonsters();
@@ -58,30 +85,35 @@ socket.on("game-message", data => {
     alert(data.message);
 });
 
-socket.on("game-over", data => {
-    if (data.winner === "draw") {
-        alert("The game is a draw!");
-    } else {
-        alert(`Player ${data.winner} wins!`);
-    }
-});
-
-socket.on("game-full", data => {
-    alert(data.message);
-});
-
 socket.on("disconnect", () => {
     connectedPlayerCount = 0;
 
-    const connectionElement = document.querySelector(
-        "#connection-status"
-    );
+    const connectionElement =
+        document.querySelector(
+            "#connection-status"
+        );
 
     if (connectionElement) {
         connectionElement.textContent =
             "Disconnected from server";
     }
 });
+
+const playAgainButton =
+    document.querySelector(
+        "#play-again-button"
+    );
+
+if (playAgainButton) {
+    playAgainButton.addEventListener(
+        "click",
+        () => {
+            if (!gameState.gameOver) return;
+
+            socket.emit("play-again");
+        }
+    );
+}
 
 createBoard();
 renderMonsters();

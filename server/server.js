@@ -72,9 +72,35 @@ function createStartingMonsters() {
     return monsters;
 }
 
+function createInitialState() {
+    return {
+        round: 1,
+
+        pendingMoves: {
+            1: null,
+            2: null
+        },
+
+        monsters: createStartingMonsters(),
+
+        stats: {
+            battles: 0,
+            playerOneEliminations: 0,
+            playerTwoEliminations: 0
+        },
+
+        gameOver: false,
+        winner: null,
+
+        rematchReady: {
+            1: false,
+            2: false
+        }
+    };
+}
+
 function createGame() {
     const gameId = `game-${nextGameNumber}`;
-
     nextGameNumber++;
 
     const game = {
@@ -85,16 +111,7 @@ function createGame() {
             2: null
         },
 
-        state: {
-            round: 1,
-
-            pendingMoves: {
-                1: null,
-                2: null
-            },
-
-            monsters: createStartingMonsters()
-        }
+        state: createInitialState()
     };
 
     games.set(gameId, game);
@@ -122,13 +139,8 @@ function assignPlayerToGame(socket) {
         game = createGame();
     }
 
-    let playerNumber;
-
-    if (game.players[1] === null) {
-        playerNumber = 1;
-    } else {
-        playerNumber = 2;
-    }
+    const playerNumber =
+        game.players[1] === null ? 1 : 2;
 
     game.players[playerNumber] = socket.id;
 
@@ -150,15 +162,7 @@ function getPlayerCount(game) {
 }
 
 function resetGame(game) {
-    game.state.round = 1;
-
-    game.state.pendingMoves = {
-        1: null,
-        2: null
-    };
-
-    game.state.monsters =
-        createStartingMonsters();
+    game.state = createInitialState();
 }
 
 function findMonster(game, monsterId) {
@@ -213,6 +217,13 @@ function bothPlayersReady(game) {
     return (
         game.state.pendingMoves[1] !== null &&
         game.state.pendingMoves[2] !== null
+    );
+}
+
+function bothPlayersWantRematch(game) {
+    return (
+        game.state.rematchReady[1] &&
+        game.state.rematchReady[2]
     );
 }
 
@@ -277,6 +288,8 @@ function resolveBattle(
         return;
     }
 
+    game.state.stats.battles++;
+
     if (monsterA.type === monsterB.type) {
         removeMonster(game, monsterA.id);
         removeMonster(game, monsterB.id);
@@ -285,8 +298,20 @@ function resolveBattle(
 
     if (beats(monsterA.type, monsterB.type)) {
         removeMonster(game, monsterB.id);
+
+        if (monsterA.player === 1) {
+            game.state.stats.playerOneEliminations++;
+        } else {
+            game.state.stats.playerTwoEliminations++;
+        }
     } else {
         removeMonster(game, monsterA.id);
+
+        if (monsterB.player === 1) {
+            game.state.stats.playerOneEliminations++;
+        } else {
+            game.state.stats.playerTwoEliminations++;
+        }
     }
 }
 
@@ -379,10 +404,7 @@ io.on("connection", socket => {
 
     socket.on("submit-move", move => {
         const gameId = socket.data.gameId;
-
-        const currentGame =
-            games.get(gameId);
-
+        const currentGame = games.get(gameId);
         const currentPlayer =
             socket.data.playerNumber;
 
@@ -390,9 +412,16 @@ io.on("connection", socket => {
             return;
         }
 
-        if (
-            getPlayerCount(currentGame) < 2
-        ) {
+        if (currentGame.state.gameOver) {
+            socket.emit(
+                "move-error",
+                "The game is finished. Choose Play Again."
+            );
+
+            return;
+        }
+
+        if (getPlayerCount(currentGame) < 2) {
             socket.emit(
                 "move-error",
                 "Wait until another player joins."
@@ -428,9 +457,7 @@ io.on("connection", socket => {
             return;
         }
 
-        if (
-            monster.player !== currentPlayer
-        ) {
+        if (monster.player !== currentPlayer) {
             socket.emit(
                 "move-error",
                 "You can only move your own monsters."
@@ -470,9 +497,10 @@ io.on("connection", socket => {
             const winner =
                 getWinner(currentGame);
 
-            broadcastGameState(currentGame);
-
             if (winner !== null) {
+                currentGame.state.gameOver = true;
+                currentGame.state.winner = winner;
+
                 io.to(currentGame.id).emit(
                     "game-over",
                     {
@@ -480,6 +508,43 @@ io.on("connection", socket => {
                     }
                 );
             }
+
+            broadcastGameState(currentGame);
+        }
+    });
+
+    socket.on("play-again", () => {
+        const gameId = socket.data.gameId;
+        const currentGame = games.get(gameId);
+        const currentPlayer =
+            socket.data.playerNumber;
+
+        if (!currentGame || !currentPlayer) {
+            return;
+        }
+
+        if (!currentGame.state.gameOver) {
+            return;
+        }
+
+        currentGame.state.rematchReady[
+            currentPlayer
+        ] = true;
+
+        broadcastGameState(currentGame);
+
+        if (bothPlayersWantRematch(currentGame)) {
+            resetGame(currentGame);
+
+            io.to(currentGame.id).emit(
+                "game-message",
+                {
+                    message:
+                        "Both players are ready. A new game has started!"
+                }
+            );
+
+            broadcastGameState(currentGame);
         }
     });
 

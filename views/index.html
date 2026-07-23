@@ -35,7 +35,7 @@
         <p>
             Current turn:
             <strong id="current-player">
-                Player 1
+                Simultaneous turns
             </strong>
         </p>
 
@@ -46,7 +46,7 @@
                 <p>
                     Status:
                     <strong id="player-one-status">
-                        Waiting
+                        Choosing
                     </strong>
                 </p>
 
@@ -64,7 +64,7 @@
                 <p>
                     Status:
                     <strong id="player-two-status">
-                        Waiting
+                        Choosing
                     </strong>
                 </p>
 
@@ -76,6 +76,41 @@
                 </p>
             </section>
         </div>
+
+        <section id="game-statistics">
+            <h2>Game Statistics</h2>
+
+            <p>
+                Battles:
+                <strong id="battle-count">0</strong>
+            </p>
+
+            <p>
+                Player 1 eliminations:
+                <strong id="player-one-eliminations">
+                    0
+                </strong>
+            </p>
+
+            <p>
+                Player 2 eliminations:
+                <strong id="player-two-eliminations">
+                    0
+                </strong>
+            </p>
+        </section>
+
+        <section id="game-over-panel">
+            <h2 id="game-result"></h2>
+
+            <button
+                id="play-again-button"
+                type="button"
+                hidden
+            >
+                Play Again
+            </button>
+        </section>
     </section>
 
     <div id="game-board"></div>

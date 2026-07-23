@@ -1,19 +1,22 @@
 function renderMonsters() {
-    document.querySelectorAll(".square").forEach(square => {
-        square.textContent = "";
+    document
+        .querySelectorAll(".square")
+        .forEach(square => {
+            square.textContent = "";
 
-        square.classList.remove(
-            "selected",
-            "pending",
-            "player-one-piece",
-            "player-two-piece"
-        );
-    });
+            square.classList.remove(
+                "selected",
+                "pending",
+                "player-one-piece",
+                "player-two-piece"
+            );
+        });
 
     gameState.monsters.forEach(monster => {
-        const square = document.querySelector(
-            `[data-row="${monster.row}"][data-col="${monster.col}"]`
-        );
+        const square =
+            document.querySelector(
+                `[data-row="${monster.row}"][data-col="${monster.col}"]`
+            );
 
         if (!square) return;
 
@@ -32,20 +35,27 @@ function renderMonsters() {
         }
 
         if (monster.player === 1) {
-            square.classList.add("player-one-piece");
+            square.classList.add(
+                "player-one-piece"
+            );
         } else {
-            square.classList.add("player-two-piece");
+            square.classList.add(
+                "player-two-piece"
+            );
         }
 
         if (
             gameState.selectedMonster &&
-            gameState.selectedMonster.id === monster.id
+            gameState.selectedMonster.id ===
+                monster.id
         ) {
             square.classList.add("selected");
         }
 
         const pendingMove =
-            gameState.pendingMoves[monster.player];
+            gameState.pendingMoves[
+                monster.player
+            ];
 
         if (
             pendingMove &&
@@ -59,12 +69,24 @@ function renderMonsters() {
 }
 
 function handleClick(row, col) {
-    if (connectedPlayerCount < 2) {
-        alert("Wait until both players are connected.");
+    if (gameState.gameOver) {
+        alert(
+            "The game is finished. Choose Play Again."
+        );
+
         return;
     }
 
-    const clickedMonster = findMonsterAt(row, col);
+    if (connectedPlayerCount < 2) {
+        alert(
+            "Wait until both players are connected."
+        );
+
+        return;
+    }
+
+    const clickedMonster =
+        findMonsterAt(row, col);
 
     if (clickedMonster) {
         selectMonster(clickedMonster);
@@ -85,18 +107,29 @@ function findMonsterAt(row, col) {
 
 function selectMonster(monster) {
     if (monster.player !== myPlayerNumber) {
-        alert("You can only select your own monsters.");
+        alert(
+            "You can only select your own monsters."
+        );
+
         return;
     }
 
-    if (gameState.pendingMoves[myPlayerNumber]) {
-        alert("You already submitted a move this round.");
+    if (
+        gameState.pendingMoves[
+            myPlayerNumber
+        ]
+    ) {
+        alert(
+            "You already submitted a move this round."
+        );
+
         return;
     }
 
     if (
         gameState.selectedMonster &&
-        gameState.selectedMonster.id === monster.id
+        gameState.selectedMonster.id ===
+            monster.id
     ) {
         gameState.selectedMonster = null;
         return;
@@ -105,7 +138,11 @@ function selectMonster(monster) {
     gameState.selectedMonster = monster;
 }
 
-function isValidMove(monster, targetRow, targetCol) {
+function isValidMove(
+    monster,
+    targetRow,
+    targetCol
+) {
     const rowDifference = Math.abs(
         targetRow - monster.row
     );
@@ -134,7 +171,10 @@ function isValidMove(monster, targetRow, targetCol) {
     );
 }
 
-function submitSelectedMove(targetRow, targetCol) {
+function submitSelectedMove(
+    targetRow,
+    targetCol
+) {
     const selectedMonster =
         gameState.selectedMonster;
 
@@ -162,22 +202,59 @@ function submitSelectedMove(targetRow, targetCol) {
 
 function updateStatusPanel() {
     const roundNumber =
-        document.querySelector("#round-number");
+        document.querySelector(
+            "#round-number"
+        );
 
     const currentPlayer =
-        document.querySelector("#current-player");
+        document.querySelector(
+            "#current-player"
+        );
 
     const playerOneStatus =
-        document.querySelector("#player-one-status");
+        document.querySelector(
+            "#player-one-status"
+        );
 
     const playerTwoStatus =
-        document.querySelector("#player-two-status");
+        document.querySelector(
+            "#player-two-status"
+        );
 
     const playerOneScore =
-        document.querySelector("#player-one-score");
+        document.querySelector(
+            "#player-one-score"
+        );
 
     const playerTwoScore =
-        document.querySelector("#player-two-score");
+        document.querySelector(
+            "#player-two-score"
+        );
+
+    const battleCount =
+        document.querySelector(
+            "#battle-count"
+        );
+
+    const playerOneEliminations =
+        document.querySelector(
+            "#player-one-eliminations"
+        );
+
+    const playerTwoEliminations =
+        document.querySelector(
+            "#player-two-eliminations"
+        );
+
+    const gameResult =
+        document.querySelector(
+            "#game-result"
+        );
+
+    const playAgainButton =
+        document.querySelector(
+            "#play-again-button"
+        );
 
     const playerOneMonsters =
         gameState.monsters.filter(
@@ -190,26 +267,33 @@ function updateStatusPanel() {
         ).length;
 
     if (roundNumber) {
-        roundNumber.textContent = gameState.round;
+        roundNumber.textContent =
+            gameState.round;
     }
 
     if (currentPlayer) {
         currentPlayer.textContent =
-            "Simultaneous turns";
+            gameState.gameOver
+                ? "Game finished"
+                : "Simultaneous turns";
     }
 
     if (playerOneStatus) {
         playerOneStatus.textContent =
-            gameState.pendingMoves[1]
-                ? "Ready"
-                : "Choosing";
+            gameState.gameOver
+                ? "Finished"
+                : gameState.pendingMoves[1]
+                    ? "Ready"
+                    : "Choosing";
     }
 
     if (playerTwoStatus) {
         playerTwoStatus.textContent =
-            gameState.pendingMoves[2]
-                ? "Ready"
-                : "Choosing";
+            gameState.gameOver
+                ? "Finished"
+                : gameState.pendingMoves[2]
+                    ? "Ready"
+                    : "Choosing";
     }
 
     if (playerOneScore) {
@@ -221,5 +305,51 @@ function updateStatusPanel() {
         playerTwoScore.textContent =
             playerTwoMonsters;
     }
-}
 
+    if (battleCount) {
+        battleCount.textContent =
+            gameState.stats.battles;
+    }
+
+    if (playerOneEliminations) {
+        playerOneEliminations.textContent =
+            gameState.stats.playerOneEliminations;
+    }
+
+    if (playerTwoEliminations) {
+        playerTwoEliminations.textContent =
+            gameState.stats.playerTwoEliminations;
+    }
+
+    if (gameResult) {
+        if (!gameState.gameOver) {
+            gameResult.textContent = "";
+        } else if (gameState.winner === "draw") {
+            gameResult.textContent =
+                "🤝 The game is a draw!";
+        } else {
+            gameResult.textContent =
+                `🏆 Player ${gameState.winner} wins!`;
+        }
+    }
+
+    if (playAgainButton) {
+        playAgainButton.hidden =
+            !gameState.gameOver;
+
+        const playerReady =
+            gameState.rematchReady[
+                myPlayerNumber
+            ];
+
+        if (playerReady) {
+            playAgainButton.textContent =
+                "Waiting for opponent...";
+            playAgainButton.disabled = true;
+        } else {
+            playAgainButton.textContent =
+                "Play Again";
+            playAgainButton.disabled = false;
+        }
+    }
+}
