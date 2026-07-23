@@ -24,20 +24,48 @@
 
         <p>
             Current turn:
-            <strong id="current-player">Player 1</strong>
+            <strong id="current-player">
+                Player 1
+            </strong>
         </p>
 
-        <p>
-            Player 1:
-            <strong id="player-one-status">Waiting</strong>
-        </p>
+        <div id="player-scores">
+            <section class="player-panel player-one-panel">
+                <h2>Player 1</h2>
 
-        <p>
-            Player 2:
-            <strong id="player-two-status">Waiting</strong>
-        </p>
+                <p>
+                    Status:
+                    <strong id="player-one-status">
+                        Waiting
+                    </strong>
+                </p>
 
-        <p id="placement-message"></p>
+                <p>
+                    Monsters remaining:
+                    <strong id="player-one-score">
+                        10
+                    </strong>
+                </p>
+            </section>
+
+            <section class="player-panel player-two-panel">
+                <h2>Player 2</h2>
+
+                <p>
+                    Status:
+                    <strong id="player-two-status">
+                        Waiting
+                    </strong>
+                </p>
+
+                <p>
+                    Monsters remaining:
+                    <strong id="player-two-score">
+                        10
+                    </strong>
+                </p>
+            </section>
+        </div>
     </section>
 
     <div id="game-board"></div>

@@ -1,9 +1,13 @@
 function renderMonsters() {
     document.querySelectorAll(".square").forEach(square => {
         square.textContent = "";
-        square.classList.remove("selected");
-        square.classList.remove("pending");
-        square.classList.remove("placement");
+
+        square.classList.remove(
+            "selected",
+            "pending",
+            "player-one-piece",
+            "player-two-piece"
+        );
     });
 
     gameState.monsters.forEach(monster => {
@@ -25,6 +29,12 @@ function renderMonsters() {
             case "ghost":
                 square.textContent = "👻";
                 break;
+        }
+
+        if (monster.player === 1) {
+            square.classList.add("player-one-piece");
+        } else {
+            square.classList.add("player-two-piece");
         }
 
         if (
@@ -92,8 +102,13 @@ function selectMonster(monster) {
 }
 
 function isValidMove(monster, targetRow, targetCol) {
-    const rowDifference = Math.abs(targetRow - monster.row);
-    const columnDifference = Math.abs(targetCol - monster.col);
+    const rowDifference = Math.abs(
+        targetRow - monster.row
+    );
+
+    const columnDifference = Math.abs(
+        targetCol - monster.col
+    );
 
     const isHorizontal =
         rowDifference === 0 &&
@@ -108,7 +123,11 @@ function isValidMove(monster, targetRow, targetCol) {
         rowDifference > 0 &&
         rowDifference <= 2;
 
-    return isHorizontal || isVertical || isDiagonal;
+    return (
+        isHorizontal ||
+        isVertical ||
+        isDiagonal
+    );
 }
 
 function queueSelectedMove(targetRow, targetCol) {
@@ -121,7 +140,13 @@ function queueSelectedMove(targetRow, targetCol) {
         return;
     }
 
-    if (!isValidMove(selectedMonster, targetRow, targetCol)) {
+    if (
+        !isValidMove(
+            selectedMonster,
+            targetRow,
+            targetCol
+        )
+    ) {
         alert("Invalid move");
         return;
     }
@@ -147,7 +172,8 @@ function queueSelectedMove(targetRow, targetCol) {
 
 function checkPendingMoves() {
     const allPlayersReady = gameState.players.every(
-        playerId => gameState.pendingMoves[playerId] !== null
+        playerId =>
+            gameState.pendingMoves[playerId] !== null
     );
 
     if (allPlayersReady) {
@@ -156,7 +182,9 @@ function checkPendingMoves() {
 }
 
 function resolveTurn() {
-    const moves = Object.values(gameState.pendingMoves);
+    const moves = Object.values(
+        gameState.pendingMoves
+    );
 
     moves.forEach(move => {
         const monster = gameState.monsters.find(
@@ -174,12 +202,15 @@ function resolveTurn() {
 
     gameState.pendingMoves[1] = null;
     gameState.pendingMoves[2] = null;
+
     gameState.round++;
     gameState.currentPlayer = 1;
 
     checkWinner();
 
-    console.log(`Round ${gameState.round - 1} completed`);
+    console.log(
+        `Round ${gameState.round - 1} completed`
+    );
 
     renderMonsters();
 }
@@ -188,7 +219,8 @@ function resolveBattles() {
     const positions = {};
 
     gameState.monsters.forEach(monster => {
-        const key = `${monster.row},${monster.col}`;
+        const key =
+            `${monster.row},${monster.col}`;
 
         if (!positions[key]) {
             positions[key] = [];
@@ -197,14 +229,16 @@ function resolveBattles() {
         positions[key].push(monster);
     });
 
-    Object.values(positions).forEach(monstersOnSquare => {
-        if (monstersOnSquare.length === 2) {
-            resolveBattle(
-                monstersOnSquare[0],
-                monstersOnSquare[1]
-            );
+    Object.values(positions).forEach(
+        monstersOnSquare => {
+            if (monstersOnSquare.length === 2) {
+                resolveBattle(
+                    monstersOnSquare[0],
+                    monstersOnSquare[1]
+                );
+            }
         }
-    });
+    );
 }
 
 function resolveBattle(monsterA, monsterB) {
@@ -223,26 +257,38 @@ function resolveBattle(monsterA, monsterB) {
 
 function beats(typeA, typeB) {
     return (
-        (typeA === "vampire" && typeB === "werewolf") ||
-        (typeA === "werewolf" && typeB === "ghost") ||
-        (typeA === "ghost" && typeB === "vampire")
+        (
+            typeA === "vampire" &&
+            typeB === "werewolf"
+        ) ||
+        (
+            typeA === "werewolf" &&
+            typeB === "ghost"
+        ) ||
+        (
+            typeA === "ghost" &&
+            typeB === "vampire"
+        )
     );
 }
 
 function removeMonster(monsterId) {
-    gameState.monsters = gameState.monsters.filter(
-        monster => monster.id !== monsterId
-    );
+    gameState.monsters =
+        gameState.monsters.filter(
+            monster => monster.id !== monsterId
+        );
 }
 
 function checkWinner() {
-    const playerOneMonsters = gameState.monsters.filter(
-        monster => monster.player === 1
-    );
+    const playerOneMonsters =
+        gameState.monsters.filter(
+            monster => monster.player === 1
+        );
 
-    const playerTwoMonsters = gameState.monsters.filter(
-        monster => monster.player === 2
-    );
+    const playerTwoMonsters =
+        gameState.monsters.filter(
+            monster => monster.player === 2
+        );
 
     if (
         playerOneMonsters.length === 0 &&
@@ -266,17 +312,31 @@ function checkWinner() {
 }
 
 function updateStatusPanel() {
-    const roundNumber = document.querySelector("#round-number");
-    const currentPlayer = document.querySelector("#current-player");
-    const playerOneStatus = document.querySelector(
-        "#player-one-status"
-    );
-    const playerTwoStatus = document.querySelector(
-        "#player-two-status"
-    );
-    const placementMessage = document.querySelector(
-        "#placement-message"
-    );
+    const roundNumber =
+        document.querySelector("#round-number");
+
+    const currentPlayer =
+        document.querySelector("#current-player");
+
+    const playerOneStatus =
+        document.querySelector(
+            "#player-one-status"
+        );
+
+    const playerTwoStatus =
+        document.querySelector(
+            "#player-two-status"
+        );
+
+    const playerOneScore =
+        document.querySelector(
+            "#player-one-score"
+        );
+
+    const playerTwoScore =
+        document.querySelector(
+            "#player-two-score"
+        );
 
     if (
         !roundNumber ||
@@ -286,7 +346,18 @@ function updateStatusPanel() {
         return;
     }
 
-    roundNumber.textContent = gameState.round;
+    const playerOneMonsters =
+        gameState.monsters.filter(
+            monster => monster.player === 1
+        ).length;
+
+    const playerTwoMonsters =
+        gameState.monsters.filter(
+            monster => monster.player === 2
+        ).length;
+
+    roundNumber.textContent =
+        gameState.round;
 
     if (currentPlayer) {
         currentPlayer.textContent =
@@ -294,12 +365,22 @@ function updateStatusPanel() {
     }
 
     playerOneStatus.textContent =
-        gameState.pendingMoves[1] ? "Ready" : "Waiting";
+        gameState.pendingMoves[1]
+            ? "Ready"
+            : "Waiting";
 
     playerTwoStatus.textContent =
-        gameState.pendingMoves[2] ? "Ready" : "Waiting";
+        gameState.pendingMoves[2]
+            ? "Ready"
+            : "Waiting";
 
-    if (placementMessage) {
-        placementMessage.textContent = "";
+    if (playerOneScore) {
+        playerOneScore.textContent =
+            playerOneMonsters;
+    }
+
+    if (playerTwoScore) {
+        playerTwoScore.textContent =
+            playerTwoMonsters;
     }
 }
