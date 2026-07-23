@@ -9,6 +9,8 @@ const gameState = {
         2: null
     },
 
+    placementPlayer: null,
+
     monsters: [
         {
             id: 1,

@@ -3,6 +3,7 @@ function renderMonsters() {
         square.textContent = "";
         square.classList.remove("selected");
         square.classList.remove("pending");
+        square.classList.remove("placement");
     });
 
     gameState.monsters.forEach(monster => {
@@ -42,9 +43,17 @@ function renderMonsters() {
             square.classList.add("pending");
         }
     });
+
+    highlightPlacementSquares();
 }
 
 function handleClick(row, col) {
+    if (gameState.placementPlayer !== null) {
+        placeNewMonster(row, col);
+        renderMonsters();
+        return;
+    }
+
     const clickedMonster = findMonsterAt(row, col);
 
     if (clickedMonster) {
@@ -146,11 +155,148 @@ function resolveTurn() {
         monster.col = move.targetCol;
     });
 
+    resolveBattles();
+
     gameState.pendingMoves[1] = null;
     gameState.pendingMoves[2] = null;
     gameState.round++;
 
     console.log(`Round ${gameState.round - 1} completed`);
+
+    renderMonsters();
+}
+
+function resolveBattles() {
+    const positions = {};
+
+    gameState.monsters.forEach(monster => {
+        const key = `${monster.row},${monster.col}`;
+
+        if (!positions[key]) {
+            positions[key] = [];
+        }
+
+        positions[key].push(monster);
+    });
+
+    Object.values(positions).forEach(monstersOnSquare => {
+        if (monstersOnSquare.length === 2) {
+            resolveBattle(
+                monstersOnSquare[0],
+                monstersOnSquare[1]
+            );
+        }
+    });
+}
+
+function resolveBattle(monsterA, monsterB) {
+    if (monsterA.type === monsterB.type) {
+        removeMonster(monsterA.id);
+        removeMonster(monsterB.id);
+
+        startPlacement(monsterA.player);
+        return;
+    }
+
+    if (beats(monsterA.type, monsterB.type)) {
+        removeMonster(monsterB.id);
+        startPlacement(monsterB.player);
+    } else {
+        removeMonster(monsterA.id);
+        startPlacement(monsterA.player);
+    }
+}
+
+function beats(typeA, typeB) {
+    return (
+        (typeA === "vampire" && typeB === "werewolf") ||
+        (typeA === "werewolf" && typeB === "ghost") ||
+        (typeA === "ghost" && typeB === "vampire")
+    );
+}
+
+function removeMonster(monsterId) {
+    gameState.monsters = gameState.monsters.filter(
+        monster => monster.id !== monsterId
+    );
+}
+
+function startPlacement(playerId) {
+    gameState.placementPlayer = playerId;
+
+    alert(
+        `Player ${playerId} lost a monster. Choose a square on your starting row.`
+    );
+}
+
+function highlightPlacementSquares() {
+    const playerId = gameState.placementPlayer;
+
+    if (playerId === null) return;
+
+    const placementRow = playerId === 1 ? 0 : 9;
+
+    document
+        .querySelectorAll(`[data-row="${placementRow}"]`)
+        .forEach(square => {
+            const row = Number(square.dataset.row);
+            const col = Number(square.dataset.col);
+
+            if (!findMonsterAt(row, col)) {
+                square.classList.add("placement");
+            }
+        });
+}
+
+function placeNewMonster(row, col) {
+    const playerId = gameState.placementPlayer;
+
+    if (playerId === null) return;
+
+    const requiredRow = playerId === 1 ? 0 : 9;
+
+    if (row !== requiredRow) {
+        alert("Choose a square on your starting row");
+        return;
+    }
+
+    if (findMonsterAt(row, col)) {
+        alert("That square is occupied");
+        return;
+    }
+
+    const chosenType = prompt(
+        "Choose a monster: vampire, werewolf or ghost"
+    );
+
+    const validTypes = [
+        "vampire",
+        "werewolf",
+        "ghost"
+    ];
+
+    const monsterType = chosenType
+        ? chosenType.toLowerCase().trim()
+        : "";
+
+    if (!validTypes.includes(monsterType)) {
+        alert("Invalid monster type");
+        return;
+    }
+
+    gameState.monsters.push({
+        id: Date.now(),
+        type: monsterType,
+        player: playerId,
+        row,
+        col
+    });
+
+    gameState.placementPlayer = null;
+
+    console.log(
+        `Player ${playerId} placed a new ${monsterType}`
+    );
 
     renderMonsters();
 }
