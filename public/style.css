@@ -35,3 +35,8 @@ h1 {
 .square:nth-child(odd) {
     background: #e8e8e8;
 }
+
+.selected {
+    outline: 4px solid red;
+    outline-offset: -4px;
+}
