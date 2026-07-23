@@ -2,14 +2,13 @@ const gameState = {
     board: [],
     players: [1, 2],
     round: 1,
+    currentPlayer: 1,
     selectedMonster: null,
 
     pendingMoves: {
         1: null,
         2: null
     },
-
-    placementPlayer: null,
 
     monsters: [
         // Player 1 — top row

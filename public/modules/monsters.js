@@ -44,17 +44,10 @@ function renderMonsters() {
         }
     });
 
-    highlightPlacementSquares();
     updateStatusPanel();
 }
 
 function handleClick(row, col) {
-    if (gameState.placementPlayer !== null) {
-        placeNewMonster(row, col);
-        renderMonsters();
-        return;
-    }
-
     const clickedMonster = findMonsterAt(row, col);
 
     if (clickedMonster) {
@@ -75,11 +68,18 @@ function findMonsterAt(row, col) {
 }
 
 function selectMonster(monster) {
-    if (gameState.pendingMoves[monster.player]) {
-    alert(`Player ${monster.player} has already submitted a move this round.`);
-    return;
+    if (monster.player !== gameState.currentPlayer) {
+        alert(`It is Player ${gameState.currentPlayer}'s turn.`);
+        return;
     }
-    
+
+    if (gameState.pendingMoves[monster.player]) {
+        alert(
+            `Player ${monster.player} has already submitted a move this round.`
+        );
+        return;
+    }
+
     if (
         gameState.selectedMonster &&
         gameState.selectedMonster.id === monster.id
@@ -116,6 +116,11 @@ function queueSelectedMove(targetRow, targetCol) {
 
     if (!selectedMonster) return;
 
+    if (selectedMonster.player !== gameState.currentPlayer) {
+        alert(`It is Player ${gameState.currentPlayer}'s turn.`);
+        return;
+    }
+
     if (!isValidMove(selectedMonster, targetRow, targetCol)) {
         alert("Invalid move");
         return;
@@ -132,6 +137,10 @@ function queueSelectedMove(targetRow, targetCol) {
     );
 
     gameState.selectedMonster = null;
+
+    if (gameState.currentPlayer === 1) {
+        gameState.currentPlayer = 2;
+    }
 
     checkPendingMoves();
 }
@@ -166,6 +175,9 @@ function resolveTurn() {
     gameState.pendingMoves[1] = null;
     gameState.pendingMoves[2] = null;
     gameState.round++;
+    gameState.currentPlayer = 1;
+
+    checkWinner();
 
     console.log(`Round ${gameState.round - 1} completed`);
 
@@ -199,17 +211,13 @@ function resolveBattle(monsterA, monsterB) {
     if (monsterA.type === monsterB.type) {
         removeMonster(monsterA.id);
         removeMonster(monsterB.id);
-
-        startPlacement(monsterA.player);
         return;
     }
 
     if (beats(monsterA.type, monsterB.type)) {
         removeMonster(monsterB.id);
-        startPlacement(monsterB.player);
     } else {
         removeMonster(monsterA.id);
-        startPlacement(monsterA.player);
     }
 }
 
@@ -227,102 +235,63 @@ function removeMonster(monsterId) {
     );
 }
 
-function startPlacement(playerId) {
-    gameState.placementPlayer = playerId;
-
-    alert(
-        `Player ${playerId} lost a monster. Choose a square on your starting row.`
+function checkWinner() {
+    const playerOneMonsters = gameState.monsters.filter(
+        monster => monster.player === 1
     );
-}
 
-function highlightPlacementSquares() {
-    const playerId = gameState.placementPlayer;
+    const playerTwoMonsters = gameState.monsters.filter(
+        monster => monster.player === 2
+    );
 
-    if (playerId === null) return;
-
-    const placementRow = playerId === 1 ? 0 : 9;
-
-    document
-        .querySelectorAll(`[data-row="${placementRow}"]`)
-        .forEach(square => {
-            const row = Number(square.dataset.row);
-            const col = Number(square.dataset.col);
-
-            if (!findMonsterAt(row, col)) {
-                square.classList.add("placement");
-            }
-        });
-}
-
-function placeNewMonster(row, col) {
-    const playerId = gameState.placementPlayer;
-
-    if (playerId === null) return;
-
-    const requiredRow = playerId === 1 ? 0 : 9;
-
-    if (row !== requiredRow) {
-        alert("Choose a square on your starting row");
+    if (
+        playerOneMonsters.length === 0 &&
+        playerTwoMonsters.length === 0
+    ) {
+        alert("The game is a draw!");
+        location.reload();
         return;
     }
 
-    if (findMonsterAt(row, col)) {
-        alert("That square is occupied");
+    if (playerOneMonsters.length === 0) {
+        alert("Player 2 wins!");
+        location.reload();
         return;
     }
 
-    const chosenType = prompt(
-        "Choose a monster: vampire, werewolf or ghost"
-    );
-
-    const validTypes = [
-        "vampire",
-        "werewolf",
-        "ghost"
-    ];
-
-    const monsterType = chosenType
-        ? chosenType.toLowerCase().trim()
-        : "";
-
-    if (!validTypes.includes(monsterType)) {
-        alert("Invalid monster type");
-        return;
+    if (playerTwoMonsters.length === 0) {
+        alert("Player 1 wins!");
+        location.reload();
     }
-
-    gameState.monsters.push({
-        id: Date.now(),
-        type: monsterType,
-        player: playerId,
-        row,
-        col
-    });
-
-    gameState.placementPlayer = null;
-
-    console.log(
-        `Player ${playerId} placed a new ${monsterType}`
-    );
-
-    renderMonsters();
 }
 
 function updateStatusPanel() {
     const roundNumber = document.querySelector("#round-number");
-    const playerOneStatus = document.querySelector("#player-one-status");
-    const playerTwoStatus = document.querySelector("#player-two-status");
-    const placementMessage = document.querySelector("#placement-message");
+    const currentPlayer = document.querySelector("#current-player");
+    const playerOneStatus = document.querySelector(
+        "#player-one-status"
+    );
+    const playerTwoStatus = document.querySelector(
+        "#player-two-status"
+    );
+    const placementMessage = document.querySelector(
+        "#placement-message"
+    );
 
     if (
         !roundNumber ||
         !playerOneStatus ||
-        !playerTwoStatus ||
-        !placementMessage
+        !playerTwoStatus
     ) {
         return;
     }
 
     roundNumber.textContent = gameState.round;
+
+    if (currentPlayer) {
+        currentPlayer.textContent =
+            `Player ${gameState.currentPlayer}`;
+    }
 
     playerOneStatus.textContent =
         gameState.pendingMoves[1] ? "Ready" : "Waiting";
@@ -330,10 +299,7 @@ function updateStatusPanel() {
     playerTwoStatus.textContent =
         gameState.pendingMoves[2] ? "Ready" : "Waiting";
 
-    if (gameState.placementPlayer !== null) {
-        placementMessage.textContent =
-            `Player ${gameState.placementPlayer} must place a new monster`;
-    } else {
+    if (placementMessage) {
         placementMessage.textContent = "";
     }
 }
