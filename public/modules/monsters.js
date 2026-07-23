@@ -45,6 +45,7 @@ function renderMonsters() {
     });
 
     highlightPlacementSquares();
+    updateStatusPanel();
 }
 
 function handleClick(row, col) {
@@ -74,6 +75,11 @@ function findMonsterAt(row, col) {
 }
 
 function selectMonster(monster) {
+    if (gameState.pendingMoves[monster.player]) {
+    alert(`Player ${monster.player} has already submitted a move this round.`);
+    return;
+    }
+    
     if (
         gameState.selectedMonster &&
         gameState.selectedMonster.id === monster.id
@@ -299,4 +305,35 @@ function placeNewMonster(row, col) {
     );
 
     renderMonsters();
+}
+
+function updateStatusPanel() {
+    const roundNumber = document.querySelector("#round-number");
+    const playerOneStatus = document.querySelector("#player-one-status");
+    const playerTwoStatus = document.querySelector("#player-two-status");
+    const placementMessage = document.querySelector("#placement-message");
+
+    if (
+        !roundNumber ||
+        !playerOneStatus ||
+        !playerTwoStatus ||
+        !placementMessage
+    ) {
+        return;
+    }
+
+    roundNumber.textContent = gameState.round;
+
+    playerOneStatus.textContent =
+        gameState.pendingMoves[1] ? "Ready" : "Waiting";
+
+    playerTwoStatus.textContent =
+        gameState.pendingMoves[2] ? "Ready" : "Waiting";
+
+    if (gameState.placementPlayer !== null) {
+        placementMessage.textContent =
+            `Player ${gameState.placementPlayer} must place a new monster`;
+    } else {
+        placementMessage.textContent = "";
+    }
 }

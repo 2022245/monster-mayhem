@@ -3,12 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Monster Mayhem</title>
+
     <link rel="stylesheet" href="/style.css">
 </head>
-<body>
 
+<body>
     <h1>Monster Mayhem</h1>
+
+    <section id="game-status">
+        <p>
+            Round:
+            <strong id="round-number">1</strong>
+        </p>
+
+        <p>
+            Player 1:
+            <strong id="player-one-status">Waiting</strong>
+        </p>
+
+        <p>
+            Player 2:
+            <strong id="player-two-status">Waiting</strong>
+        </p>
+
+        <p id="placement-message"></p>
+    </section>
 
     <div id="game-board"></div>
 
@@ -16,6 +37,6 @@
     <script src="/modules/board.js"></script>
     <script src="/modules/monsters.js"></script>
     <script src="/main.js"></script>
-
 </body>
 </html>
+
