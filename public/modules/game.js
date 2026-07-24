@@ -16,6 +16,15 @@ const gameState = {
         playerTwoEliminations: 0
     },
 
+    records: {
+        gamesPlayed: 0,
+        playerOneWins: 0,
+        playerOneLosses: 0,
+        playerTwoWins: 0,
+        playerTwoLosses: 0,
+        draws: 0
+    },
+
     gameOver: false,
     winner: null,
 

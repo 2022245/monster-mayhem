@@ -55,6 +55,9 @@ socket.on("game-state", serverState => {
     gameState.stats =
         serverState.stats;
 
+    gameState.records =
+        serverState.records;
+
     gameState.gameOver =
         serverState.gameOver;
 

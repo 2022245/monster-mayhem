@@ -111,6 +111,15 @@ function createGame() {
             2: null
         },
 
+        records: {
+            gamesPlayed: 0,
+            playerOneWins: 0,
+            playerOneLosses: 0,
+            playerTwoWins: 0,
+            playerTwoLosses: 0,
+            draws: 0
+        },
+
         state: createInitialState()
     };
 
@@ -165,6 +174,13 @@ function resetGame(game) {
     game.state = createInitialState();
 }
 
+function getPublicGameState(game) {
+    return {
+        ...game.state,
+        records: game.records
+    };
+}
+
 function findMonster(game, monsterId) {
     return game.state.monsters.find(
         monster => monster.id === monsterId
@@ -172,17 +188,23 @@ function findMonster(game, monsterId) {
 }
 
 function isValidMove(
+    game,
     monster,
     targetRow,
     targetCol
 ) {
     if (
+        !Number.isInteger(targetRow) ||
+        !Number.isInteger(targetCol) ||
         targetRow < 0 ||
         targetRow > 9 ||
         targetCol < 0 ||
         targetCol > 9
     ) {
-        return false;
+        return {
+            valid: false,
+            message: "The target square is outside the board."
+        };
     }
 
     const rowDifference = Math.abs(
@@ -206,11 +228,73 @@ function isValidMove(
         rowDifference > 0 &&
         rowDifference <= 2;
 
-    return (
-        isHorizontal ||
-        isVertical ||
-        isDiagonal
+    if (!(isHorizontal || isVertical || isDiagonal)) {
+        return {
+            valid: false,
+            message:
+                "Monsters move horizontally, vertically, or up to two squares diagonally."
+        };
+    }
+
+    const destinationMonster =
+        game.state.monsters.find(
+            otherMonster =>
+                otherMonster.row === targetRow &&
+                otherMonster.col === targetCol
+        );
+
+    if (
+        destinationMonster &&
+        destinationMonster.player === monster.player
+    ) {
+        return {
+            valid: false,
+            message:
+                "You cannot finish a move on one of your own monsters."
+        };
+    }
+
+    const rowStep = Math.sign(
+        targetRow - monster.row
     );
+
+    const columnStep = Math.sign(
+        targetCol - monster.col
+    );
+
+    let currentRow = monster.row + rowStep;
+    let currentCol = monster.col + columnStep;
+
+    while (
+        currentRow !== targetRow ||
+        currentCol !== targetCol
+    ) {
+        const blockingMonster =
+            game.state.monsters.find(
+                otherMonster =>
+                    otherMonster.row === currentRow &&
+                    otherMonster.col === currentCol
+            );
+
+        if (
+            blockingMonster &&
+            blockingMonster.player !== monster.player
+        ) {
+            return {
+                valid: false,
+                message:
+                    "You cannot move through an opponent's monster."
+            };
+        }
+
+        currentRow += rowStep;
+        currentCol += columnStep;
+    }
+
+    return {
+        valid: true,
+        message: ""
+    };
 }
 
 function bothPlayersReady(game) {
@@ -371,7 +455,7 @@ function getWinner(game) {
 function broadcastGameState(game) {
     io.to(game.id).emit(
         "game-state",
-        game.state
+        getPublicGameState(game)
     );
 }
 
@@ -466,16 +550,17 @@ io.on("connection", socket => {
             return;
         }
 
-        if (
-            !isValidMove(
-                monster,
-                move.targetRow,
-                move.targetCol
-            )
-        ) {
+        const moveValidation = isValidMove(
+            currentGame,
+            monster,
+            move.targetRow,
+            move.targetCol
+        );
+
+        if (!moveValidation.valid) {
             socket.emit(
                 "move-error",
-                "Invalid move."
+                moveValidation.message
             );
 
             return;
@@ -500,6 +585,18 @@ io.on("connection", socket => {
             if (winner !== null) {
                 currentGame.state.gameOver = true;
                 currentGame.state.winner = winner;
+
+                currentGame.records.gamesPlayed++;
+
+                if (winner === "draw") {
+                    currentGame.records.draws++;
+                } else if (winner === 1) {
+                    currentGame.records.playerOneWins++;
+                    currentGame.records.playerTwoLosses++;
+                } else {
+                    currentGame.records.playerTwoWins++;
+                    currentGame.records.playerOneLosses++;
+                }
 
                 io.to(currentGame.id).emit(
                     "game-over",

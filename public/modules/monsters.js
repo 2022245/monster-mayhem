@@ -138,7 +138,7 @@ function selectMonster(monster) {
     gameState.selectedMonster = monster;
 }
 
-function isValidMove(
+function validateMove(
     monster,
     targetRow,
     targetCol
@@ -164,11 +164,65 @@ function isValidMove(
         rowDifference > 0 &&
         rowDifference <= 2;
 
-    return (
-        isHorizontal ||
-        isVertical ||
-        isDiagonal
+    if (!(isHorizontal || isVertical || isDiagonal)) {
+        return {
+            valid: false,
+            message:
+                "Monsters move horizontally, vertically, or up to two squares diagonally."
+        };
+    }
+
+    const destinationMonster =
+        findMonsterAt(targetRow, targetCol);
+
+    if (
+        destinationMonster &&
+        destinationMonster.player === monster.player
+    ) {
+        return {
+            valid: false,
+            message:
+                "You cannot finish a move on one of your own monsters."
+        };
+    }
+
+    const rowStep = Math.sign(
+        targetRow - monster.row
     );
+
+    const columnStep = Math.sign(
+        targetCol - monster.col
+    );
+
+    let currentRow = monster.row + rowStep;
+    let currentCol = monster.col + columnStep;
+
+    while (
+        currentRow !== targetRow ||
+        currentCol !== targetCol
+    ) {
+        const blockingMonster =
+            findMonsterAt(currentRow, currentCol);
+
+        if (
+            blockingMonster &&
+            blockingMonster.player !== monster.player
+        ) {
+            return {
+                valid: false,
+                message:
+                    "You cannot move through an opponent's monster."
+            };
+        }
+
+        currentRow += rowStep;
+        currentCol += columnStep;
+    }
+
+    return {
+        valid: true,
+        message: ""
+    };
 }
 
 function submitSelectedMove(
@@ -180,14 +234,14 @@ function submitSelectedMove(
 
     if (!selectedMonster) return;
 
-    if (
-        !isValidMove(
-            selectedMonster,
-            targetRow,
-            targetCol
-        )
-    ) {
-        alert("Invalid move.");
+    const moveValidation = validateMove(
+        selectedMonster,
+        targetRow,
+        targetCol
+    );
+
+    if (!moveValidation.valid) {
+        alert(moveValidation.message);
         return;
     }
 
@@ -244,6 +298,26 @@ function updateStatusPanel() {
     const playerTwoEliminations =
         document.querySelector(
             "#player-two-eliminations"
+        );
+
+    const gamesPlayed =
+        document.querySelector(
+            "#games-played"
+        );
+
+    const playerOneRecord =
+        document.querySelector(
+            "#player-one-record"
+        );
+
+    const playerTwoRecord =
+        document.querySelector(
+            "#player-two-record"
+        );
+
+    const drawCount =
+        document.querySelector(
+            "#draw-count"
         );
 
     const gameResult =
@@ -321,6 +395,26 @@ function updateStatusPanel() {
             gameState.stats.playerTwoEliminations;
     }
 
+    if (gamesPlayed) {
+        gamesPlayed.textContent =
+            gameState.records.gamesPlayed;
+    }
+
+    if (playerOneRecord) {
+        playerOneRecord.textContent =
+            `${gameState.records.playerOneWins} wins / ${gameState.records.playerOneLosses} losses`;
+    }
+
+    if (playerTwoRecord) {
+        playerTwoRecord.textContent =
+            `${gameState.records.playerTwoWins} wins / ${gameState.records.playerTwoLosses} losses`;
+    }
+
+    if (drawCount) {
+        drawCount.textContent =
+            gameState.records.draws;
+    }
+
     if (gameResult) {
         if (!gameState.gameOver) {
             gameResult.textContent = "";
@@ -353,3 +447,4 @@ function updateStatusPanel() {
         }
     }
 }
+
